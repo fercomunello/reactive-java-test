@@ -61,5 +61,6 @@ public class MonoTest {
         StepVerifier.create(mono)
                 .expectError(RuntimeException.class)
                 .verify();
+
     }
 }
