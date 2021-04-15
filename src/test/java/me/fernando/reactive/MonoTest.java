@@ -6,9 +6,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 public class MonoTest {
 
     private static final Logger log = LoggerFactory.getLogger(MonoTest.class);
@@ -34,25 +31,14 @@ public class MonoTest {
     public void monoSubscriberConsumer() {
         final String message = "Mono Test =D";
 
-        Mono<String> mono = Mono.just(message).map(new Function<String, String>() {
-            @Override
-            public String apply(String s) {
-                throw new RuntimeException("Mono error thrown!");
-            }
+        Mono<String> mono = Mono.just(message).map(s -> {
+            throw new RuntimeException("Mono error thrown!");
         });
 
         // Error flux: onSubscribe -> request -> onError
-        mono.subscribe(new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                log.info("Message is {}", s);
-            }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) {
-                log.error("Subscriber error thrown!");
-                throwable.printStackTrace();
-            }
+        mono.subscribe(s -> log.info("Message is {}", s), throwable -> {
+            log.error("Subscriber error thrown!");
+            throwable.printStackTrace();
         });
 
         log.info("\n");
