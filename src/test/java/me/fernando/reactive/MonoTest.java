@@ -1,6 +1,7 @@
 package me.fernando.reactive;
 
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ public class MonoTest {
         mono.subscribe();
         log.info("\n");
 
-        // Script for async sequence (step by step)
+        // Test Script
         StepVerifier.create(mono)
                 .expectNext(message) // changing to another string will fail in the test
                 .verifyComplete();
@@ -43,10 +44,98 @@ public class MonoTest {
 
         log.info("\n");
 
-        // Script for async sequence (step by step)
+        // Test Script
         StepVerifier.create(mono)
                 .expectError(RuntimeException.class)
                 .verify();
+    }
 
+    @Test
+    public void monoSubscriberConsumerComplete() {
+        final String message = "Mono Test =D";
+
+        // Collect and log upper-case message stream
+        Mono<String> mono = Mono.just(message).log()
+                .map(String::toUpperCase);
+
+        // Flux: onSubscribe -> request (unbounded) -> onNext -> onComplete
+        mono.subscribe(s -> log.info("Message is {}", s),
+                Throwable::printStackTrace, () -> log.info("Completed!!"));
+
+        log.info("\n");
+
+        // Test Script
+        StepVerifier.create(mono)
+                .expectNext(message.toUpperCase())
+                .verifyComplete();
+    }
+
+    @Test
+    public void monoSubscriberConsumerSubscriptionCancel() {
+        final String message = "Mono Test =D";
+
+        // Collect and log upper-case message stream
+        Mono<String> mono = Mono.just(message).log()
+                .map(String::toUpperCase);
+
+        // Flux: onSubscribe -> cancel
+        mono.subscribe(s -> log.info("Message is {}", s),
+                Throwable::printStackTrace, () -> log.info("Completed!!"),
+                Subscription::cancel);
+
+        log.info("\n");
+
+        // Test Script
+        StepVerifier.create(mono)
+                .expectNext(message.toUpperCase())
+                .verifyComplete();
+    }
+
+    @Test
+    public void monoSubscriberConsumerSubscriptionBoundedCancel() {
+        final String message = "Mono Test =D";
+
+        // Collect and log upper-case message stream
+        Mono<String> mono = Mono.just(message).log()
+                .map(String::toUpperCase);
+
+        // Flux: onSubscribe ->
+        mono.subscribe(s -> log.info("Message is {}", s),
+                Throwable::printStackTrace, () -> log.info("Completed!!"),
+                subscription -> subscription.request(5L));
+
+        log.info("\n");
+
+        // Test Script
+        StepVerifier.create(mono)
+                .expectNext(message.toUpperCase())
+                .verifyComplete();
+    }
+
+    @Test
+    public void monoSubscriberListeners() {
+        final String message = "Mono Test =D";
+
+        // Collect and log upper-case message stream
+        // Set the consumers for Mono listenres
+        Mono<Object> mono = Mono.just(message).log()
+                .map(String::toUpperCase)
+                .doOnSubscribe(subscription -> log.info("Subscribed!!"))
+                .doOnRequest(value -> log.info("Request Received ..."))
+                // Initial value of the message
+                .doOnNext(s -> log.info("Message is {}", s))
+                // Returns a Mono that completes without emitting any item
+                .flatMap(s -> Mono.empty())
+                // Will not execute because there's no data available to display
+                .doOnNext(s -> log.info("Message is {}", s))
+                // The final value of the message will be null
+                .doOnSuccess(s -> log.info("Success Listener executed!! Message is {}", s));
+
+
+        // Flux: onSubscribe -> request (unbounded) -> onNext -> onComplete
+        mono.subscribe(s -> log.info("Message is {}", s),
+                Throwable::printStackTrace, () -> log.info("Completed!!"));
+
+        log.info("\n");
     }
 }
