@@ -138,4 +138,50 @@ public class MonoTest {
 
         log.info("\n");
     }
+
+    @Test
+    public void monoSubscriberErrorListeners() {
+        Mono<Object> monoException = Mono.error(new Exception("Exception thrown"))
+                .doOnError(e -> log.error("Error message is {}", e.getMessage()))
+                // Will not execute because the exception was thrown
+                .doOnNext(value -> log.info("Starting next execution ..."))
+                .log();
+
+        StepVerifier.create(monoException)
+                .expectError(Exception.class)
+                .verify();
+    }
+
+    @Test
+    public void monoSubscriberErrorResumeListeners() {
+        final String message = "Test message :P";
+        Mono<Object> monoException = Mono.error(new Exception("Exception thrown"))
+                .onErrorResume(value -> {
+                    log.info("onErrorResume method");
+                    return Mono.just(message);
+                })
+                .doOnError(e -> log.error("Error message is {}", e.getMessage()))
+                .log();
+
+        StepVerifier.create(monoException)
+                .expectNext(message)
+                .verifyComplete();
+    }
+
+    @Test
+    public void monoSubscriberErrorReturnListeners() {
+        final String message = "Test message :P";
+        Mono<Object> monoException = Mono.error(new Exception("Exception thrown"))
+                .onErrorResume(value -> {
+                    log.info("onErrorResume method");
+                    return Mono.just(message);
+                })
+                .onErrorReturn(message)
+                .doOnError(e -> log.error("Error message is {}", e.getMessage()))
+                .log();
+
+        StepVerifier.create(monoException)
+                .expectNext(message)
+                .verifyComplete();
+    }
 }
