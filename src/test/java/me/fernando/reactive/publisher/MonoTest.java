@@ -1,4 +1,4 @@
-package me.fernando.reactive;
+package me.fernando.reactive.publisher;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
